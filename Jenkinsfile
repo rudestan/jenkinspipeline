@@ -3,40 +3,15 @@ properties([[
     strategy: [$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']
 ]])
 
-@NonCPS
-List getJiraIssues() {
-    def changeLogSets = currentBuild.changeSets
-    def issues = []
-    def r = /^(CA-[0-9]*).*/
-
-    for (int i = 0; i < changeLogSets.size(); i++) {
-        def entries = changeLogSets[i].items
-
-        for (int j = 0; j < entries.length; j++) {
-            def entry = entries[j]
-            def issueMatch = (entry.msg =~ r)
-            echo "ORIGINAL GIT MESSAGE :\"" + entry.msg + "\""
-            echo issueMatch.toString()
-            echo issueMatch.matches().toString()
-
-            if (issueMatch.matches()) {
-                def jiraIssue = entry.msg
-
-                echo jiraIssue
-
-                if (!issues.contains(jiraIssue)) {
-                    echo "Added " + jiraIssue
-
-                    issues.add(jiraIssue)
-                }
-            }
-        }
-    }
-
-    return issues
-}
-
 node {
+    /* Jira config Map */
+    def Map jiraConfig = [
+        site: 'Jira-CA', 
+        regex: /^(CA-[0-9]*).*/, 
+        transition: 341, 
+        comment: '(/) Build successuful. Build tag: ' + env.BUILD_TAG
+    ]
+
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm', 'defaultFg': 1, 'defaultBg': 2]) {
         wrap([$class: 'TimestamperBuildWrapper']) {
 
@@ -52,10 +27,62 @@ node {
                 }
 
                 stage('JIRA') {
-                    echo 'Updating the status of JIRA tickets'
-                    def issues = getJiraIssues()
+                    echo 'Updating Jira'
+
+                    def List issues = getJiraIssues(changeLogSets, jiraConfig.regex)
+
+                    if (issues.size()) {
+                        echo "Found " + issues.size().toString() + ' JIRA tickets to update'
+
+                        updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraConfig.comment)
+                    }
                 }                
             }
         }
     }
+}
+
+/**
+ * Returns list of Jira issues extracted from Git change logs of the current deploy
+ *
+ * @return List
+ */
+@NonCPS
+List getJiraIssues(List changeLogs, String rPattern) {
+    def issues = []
+
+    for (int i = 0; i < changeLogs.size(); i++) {
+        def entries = changeLogs[i].items
+
+        for (int j = 0; j < entries.length; j++) {
+            def issueMatch = (entries[j].msg =~ rPattern)
+            
+            if (issueMatch.matches()) {
+                def issueNumber = issueMatch.group(1)
+
+                if (!issues.contains(issueNumber)) {
+                    issues.add(issueNumber)
+                }
+            }
+        }
+    }
+
+    return issues
+}
+
+/**
+ * Updates Jira issues, changes the status of correspodning ticket and adds a comment
+ *
+ * @return boolean
+ */
+boolean updateJiraIssues(List issues, String jiraSite, int transitionId, String comment) {
+    def transitionInput = [transition: [id: transitionId]]
+
+    for(int i = 0; i < issues.size(); i++) {
+        def issueKey = issues[i]
+        jiraTransitionIssue idOrKey: issueKey, input: transitionInput, site: jiraSite
+        jiraAddComment idOrKey: issueKey, comment: comment, site: jiraSite
+    }
+
+    return true
 }
