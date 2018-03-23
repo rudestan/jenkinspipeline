@@ -9,7 +9,7 @@ node {
         site: "Jira-CA", 
         regex: /^(CA-[0-9]*).*/, 
         transition: 341, 
-        comment: "(/) Build successuful. Build tag: ${env.BUILD_TAG}" + 
+        comment: "(/) Build successuful. Build tag: ${env.BUILD_TAG}"
     ]
 
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm', 'defaultFg': 1, 'defaultBg': 2]) {
