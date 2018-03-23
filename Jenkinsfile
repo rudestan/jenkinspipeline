@@ -3,6 +3,7 @@ properties([[
     strategy: [$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']
 ]])
 
+
 node {
     /* Jira config Map */
     def Map jiraConfig = [
@@ -86,7 +87,7 @@ boolean updateJiraIssues(List issues, String jiraSite, int transitionId, String 
         if (transitionId > 0) {
             jiraTransitionIssue idOrKey: issueKey, input: transitionInput, site: jiraSite
         }
-        
+
         jiraAddComment idOrKey: issueKey, comment: comment, site: jiraSite
     }
 
