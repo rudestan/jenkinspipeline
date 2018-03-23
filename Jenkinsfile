@@ -29,7 +29,7 @@ node {
                 stage('JIRA') {
                     echo 'Updating Jira'
 
-                    def List issues = getJiraIssues(changeLogSets, jiraConfig.regex)
+                    def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
 
                     if (issues.size()) {
                         echo "Found " + issues.size().toString() + ' JIRA tickets to update'
@@ -48,15 +48,15 @@ node {
  * @return List
  */
 @NonCPS
-List getJiraIssues(List changeLogs, String rPattern) {
+List getJiraIssues(List changeSets, String rPattern) {
     def issues = []
 
-    for (int i = 0; i < changeLogs.size(); i++) {
-        def entries = changeLogs[i].items
+    for (int i = 0; i < changeSets.size(); i++) {
+        def entries = changeSets[i].items
 
         for (int j = 0; j < entries.length; j++) {
             def issueMatch = (entries[j].msg =~ rPattern)
-            
+
             if (issueMatch.matches()) {
                 def issueNumber = issueMatch.group(1)
 
