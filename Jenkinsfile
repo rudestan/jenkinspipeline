@@ -18,7 +18,7 @@ List getJiraIssues() {
             echo "MSG from git: " + entry.msg
 
             if (entry.msg =~ r) {
-                def jiraIssue = entry.msg.findAll(r)[0]
+                def jiraIssue = entry.msg
 
                 echo jiraIssue
 
