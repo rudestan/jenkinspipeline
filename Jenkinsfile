@@ -14,7 +14,7 @@ List getJiraIssues() {
 
         for (int j = 0; j < entries.length; j++) {
             def entry = entries[j]
-            def issueMatch = entry.msg =~ r
+            def issueMatch = (entry.msg =~ r)
             echo "ORIGINAL GIT MESSAGE :\"" + entry.msg + "\""
 
             echo issueMatch.matches().toString()
