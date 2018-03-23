@@ -17,7 +17,7 @@ List getJiraIssues() {
             def issueMatch = entry.msg =~ r
             echo "ORIGINAL GIT MESSAGE :\"" + entry.msg + "\""
 
-            echo issueMatch.matches.toString()
+            echo issueMatch.matches().toString()
 
             if (issueMatch.matches()) {
                 def jiraIssue = entry.msg
