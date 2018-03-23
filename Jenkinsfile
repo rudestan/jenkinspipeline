@@ -7,7 +7,7 @@ properties([[
 List getJiraIssues() {
     def changeLogSets = currentBuild.changeSets
     def issues = []
-    def r = /(CA-[0-9]*)/
+    def r = /^(CA-[0-9]*).*/
 
     for (int i = 0; i < changeLogSets.size(); i++) {
         def entries = changeLogSets[i].items
