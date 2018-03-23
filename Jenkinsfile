@@ -17,7 +17,43 @@ node {
                         """
                     }
                 }
+
+                stage('JIRA') {
+                    echo 'Updating the status of JIRA tickets'
+                    def issues = getJiraIssues()
+                }                
             }
         }
     }
+}
+
+@NonCPS
+List getJiraIssues() {
+    def changeLogSets = currentBuild.changeSets
+    def issues = []
+    def r = /(CA-[0-9]*)/
+
+    for (int i = 0; i < changeLogSets.size(); i++) {
+        def entries = changeLogSets[i].items
+
+        for (int j = 0; j < entries.length; j++) {
+            def entry = entries[j]
+
+            echo "MSG from git: " + entry.msg
+
+            if (entry.msg =~ r) {
+                def jiraIssue = entry.msg.findAll(r)[0]
+
+                echo jiraIssue
+
+                if (!issues.contains(jiraIssue)) {
+                    echo "Added " + jiraIssue
+
+                    issues.add(jiraIssue)
+                }
+            }
+        }
+    }
+
+    return issues
 }
