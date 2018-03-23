@@ -14,10 +14,12 @@ List getJiraIssues() {
 
         for (int j = 0; j < entries.length; j++) {
             def entry = entries[j]
+            def issueMatch = entry.msg =~ r
+            echo "ORIGINAL GIT MESSAGE :\"" + entry.msg + "\""
 
-            echo "MSG from git: " + entry.msg
+            echo issueMatch.matches()
 
-            if (entry.msg =~ r) {
+            if (issueMatch.matches()) {
                 def jiraIssue = entry.msg
 
                 echo jiraIssue
@@ -33,7 +35,7 @@ List getJiraIssues() {
 
     return issues
 }
-    
+
 node {
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm', 'defaultFg': 1, 'defaultBg': 2]) {
         wrap([$class: 'TimestamperBuildWrapper']) {
