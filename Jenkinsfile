@@ -3,14 +3,13 @@ properties([[
     strategy: [$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']
 ]])
 
-
 node {
     /* Jira config Map */
     def Map jiraConfig = [
-        site: 'Jira-CA', 
+        site: "Jira-CA", 
         regex: /^(CA-[0-9]*).*/, 
         transition: 341, 
-        comment: '(/) Build successuful. Build tag: ' + env.BUILD_TAG
+        comment: "(/) Build successuful. Build tag: ${env.BUILD_TAG}" + 
     ]
 
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm', 'defaultFg': 1, 'defaultBg': 2]) {
@@ -28,16 +27,16 @@ node {
                 }
 
                 stage('JIRA') {
-                    println 'Updating Jira'
+                    println "Updating Jira"
 
                     def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
 
                     if (issues.size()) {
-                        println 'Found ' + issues.size().toString() + ' JIRA tickets to update'
+                        println "Found ${issues.size().toString()} JIRA tickets to update"
 
                         updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraConfig.comment)
                     } else {
-                        println 'No JIRA tickets found to update'
+                        println "No JIRA tickets found to update"
                     }
                 }                
             }
