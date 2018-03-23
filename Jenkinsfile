@@ -27,14 +27,16 @@ node {
                 }
 
                 stage('JIRA') {
-                    echo 'Updating Jira'
+                    println 'Updating Jira'
 
                     def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
 
                     if (issues.size()) {
-                        echo "Found " + issues.size().toString() + ' JIRA tickets to update'
+                        println 'Found ' + issues.size().toString() + ' JIRA tickets to update'
 
                         updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraConfig.comment)
+                    } else {
+                        println 'No JIRA tickets found to update'
                     }
                 }                
             }
@@ -80,7 +82,11 @@ boolean updateJiraIssues(List issues, String jiraSite, int transitionId, String 
 
     for(int i = 0; i < issues.size(); i++) {
         def issueKey = issues[i]
-        jiraTransitionIssue idOrKey: issueKey, input: transitionInput, site: jiraSite
+
+        if (transitionId > 0) {
+            jiraTransitionIssue idOrKey: issueKey, input: transitionInput, site: jiraSite
+        }
+        
         jiraAddComment idOrKey: issueKey, comment: comment, site: jiraSite
     }
 
