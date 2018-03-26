@@ -43,12 +43,10 @@ node {
                 }   */ 
 
                 stage('JIRA Test Link') {
-                    def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
-echo issues.size().toString()
-                    if (!issues.size()) {
+                    def jiraIssue = getRegexMatchedStr(env.BRANCH_NAME, jiraConfig.regex)
+
+                    if (!jiraIssue) {
                         println "No JIRA tickets found"
-                    } else if (issues.size() > 1) {
-                        println "Wrong amount of JIRA tickets found: ${issues.size()}"
                     } else {
                         def String normalizedName = getNormalizedName(env.BRANCH_NAME)
                         def String testUrl = "http://go.${normalizedName}.ra.testing.customer-alliance.com"
@@ -81,20 +79,26 @@ List getJiraIssues(List changeSets, String rPattern) {
     for (int i = 0; i < changeSets.size(); i++) {
         def entries = changeSets[i].items
 
-        for (int j = 0; j < entries.length; j++) {
-            def issueMatch = (entries[j].msg =~ rPattern)
-
-            if (issueMatch.matches()) {
-                def issueNumber = issueMatch.group(1)
-
-                if (!issues.contains(issueNumber)) {
-                    issues.add(issueNumber)
-                }
+        for (int j = 0; j < entries.length; j++) {            
+            def issueNumber = getRegexMatchedStr(entries[j].msg, rPattern) 
+            if (issueNumber && !issues.contains(issueNumber)) {
+                issues.add(issueNumber)
             }
         }
     }
 
     return issues
+}
+
+/**
+ * Returns regex matched string 
+* 
+ * @return String
+ */
+String getRegexMatchedStr(String sourceString, String rPattern) {
+    def strMatch = (sourceString =~ rPattern)
+
+    return strMatch.matches() ? strMatch.group(1) : null
 }
 
 /**
