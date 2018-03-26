@@ -43,7 +43,7 @@ node {
                 }   */ 
 
                 stage('JIRA Test Link') {
-                    println env.BRANCH_NAME
+                    println ${GIT_BRANCH}
                     def String jiraIssue = getRegexMatchedStr(env.BRANCH_NAME, jiraConfig.regex)
 
                     if (!jiraIssue) {
