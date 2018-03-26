@@ -43,7 +43,8 @@ node {
                 }   */ 
 
                 stage('JIRA Test Link') {
-                    def jiraIssue = getRegexMatchedStr(env.BRANCH_NAME, jiraConfig.regex)
+                    println env.BRANCH_NAME
+                    def String jiraIssue = getRegexMatchedStr(env.BRANCH_NAME, jiraConfig.regex)
 
                     if (!jiraIssue) {
                         println "No JIRA tickets found"
