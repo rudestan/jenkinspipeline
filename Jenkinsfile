@@ -44,7 +44,7 @@ node {
 
                 stage('JIRA Test Link') {
                     def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
-
+echo issues.size().toString()
                     if (!issues.size()) {
                         println "No JIRA tickets found"
                     } else if (issues.size() > 1) {
