@@ -43,20 +43,19 @@ node {
                 }   */ 
 
                 stage('JIRA Test Link') {
-                    println ${GIT_BRANCH}
-                    def String jiraIssue = getRegexMatchedStr(env.BRANCH_NAME, jiraConfig.regex)
+                    def String t = 'CA-5377-some-branch-for-testing'
+                    def String jiraIssue = getRegexMatchedStr(t, jiraConfig.regex)
 
                     if (!jiraIssue) {
                         println "No JIRA tickets found"
                     } else {
-                        def String normalizedName = getNormalizedName(env.BRANCH_NAME)
+                        def String normalizedName = getNormalizedName(t)
                         def String testUrl = "http://go.${normalizedName}.ra.testing.customer-alliance.com"
-                        def String issueNumber = issues[0]
 
-                        boolean hasTestingUrl = issueHasField(issueNumber, jiraConfig.testingLinkField, jiraConfig.site)
+                        boolean hasTestingUrl = issueHasField(jiraIssue, jiraConfig.testingLinkField, jiraConfig.site)
 
                         if (!hasTestingUrl) {
-                            setJiraIssueField(testUrl, issueNumber, jiraConfig.projectId, jiraConfig.testingLinkField, jiraConfig.site)
+                            updateJiraIssueField(testUrl, jiraIssue, jiraConfig.projectId, jiraConfig.testingLinkField, jiraConfig.site)
                         } else {
                             println "Issue already has a test link"
                         }
