@@ -9,7 +9,9 @@ node {
         site: "Jira-CA", 
         regex: /^(CA-[0-9]*).*/, 
         transition: 341, 
-        comment: "(/) Build successuful. Build tag: ${env.BUILD_TAG}"
+        comment: "(/) Build successufuly deployed.",
+        projectId: "10000",
+        testingLinkField: "customfield_10300"
     ]
 
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm', 'defaultFg': 1, 'defaultBg': 2]) {
@@ -25,7 +27,7 @@ node {
                         """
                     }
                 }
-
+/*
                 stage('JIRA') {
                     println "Updating Jira"
 
@@ -36,9 +38,32 @@ node {
 
                         updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraConfig.comment)
                     } else {
-                        println "No JIRA tickets found to update"
+                        println "No JIRA tickets found"
                     }
-                }                
+                }   */ 
+
+                stage('JIRA Test Link') {
+                    def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
+
+                    if (!issues.size()) {
+                        println "No JIRA tickets found"
+                    } else if (issues.size() > 1) {
+                        println "Wrong amount of JIRA tickets found: ${issues.size()}"
+                    } else {
+                        def String normalizedName = getNormalizedName(env.BRANCH_NAME)
+                        def String testUrl = "http://go.${normalizedName}.ra.testing.customer-alliance.com"
+                        def String issueNumber = issues[0]
+
+                        boolean hasTestingUrl = issueHasField(issueNumber, jiraConfig.testingLinkField, jiraConfig.site)
+
+                        if (!hasTestingUrl) {
+                            setJiraIssueField(testUrl, issueNumber, jiraConfig.projectId, jiraConfig.testingLinkField, jiraConfig.site)
+                        } else {
+                            println "Issue already has a test link"
+                        }
+                    }
+                }
+
             }
         }
     }
@@ -91,4 +116,37 @@ boolean updateJiraIssues(List issues, String jiraSite, int transitionId, String 
     }
 
     return true
+}
+
+/**
+ * Updates the value of passed field for Jira issue
+ * 
+ * @return boolean
+ */
+boolean updateJiraIssueField(String testUrl, String issueNumber, String projectId, String fieldName, String site) {
+    def testIssue = [fields: [
+                           project: [id: projectId],
+                           "${fieldName}": testUrl]]
+
+    jiraEditIssue idOrKey: issueNumber, issue: testIssue, site: site    
+}
+
+/**
+ * Checks whether Jira issue already has not null value for certain field
+ *
+ * @return boolean
+ */
+boolean issueHasField(String issue, String fieldName, String jiraSite) {
+    def jiraIssue = jiraGetIssue idOrKey: issue, site: jiraSite
+
+    return jiraIssue.data.fields."${fieldName}" ?: false
+}
+
+/**
+ * Returns normalized string
+ * 
+ * @return String
+ */
+String getNormalizedName(String branchName) {
+    return branchName.toLowerCase().replace(/[^-a-z0-9]/, '-')
 }
