@@ -27,21 +27,25 @@ node {
                         """
                     }
                 }
-/*
-                stage('JIRA') {
-                    println "Updating Jira"
 
+                stage('JIRA Tickets transition') {
                     def List issues = getJiraIssues(currentBuild.changeSets, jiraConfig.regex)
-
                     if (issues.size()) {
-                        println "Found ${issues.size().toString()} JIRA tickets to update"
+                        println "Found ${issues.size().toString()} JIRA ticket(s)"
 
-                        updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraConfig.comment)
+                        String jiraComment = jiraConfig.comment
+                        String releaseTag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim()
+
+                        if (releaseTag.length()) {
+                            jiraComment += ' Release: [${releaseTag}|https://github.com/customer-alliance/review-analytics/releases/tag/${releaseTag}]'
+                        }
+
+                        updateJiraIssues(issues, jiraConfig.site, jiraConfig.transition, jiraComment)
                     } else {
                         println "No JIRA tickets found"
                     }
-                }   */ 
-
+                }  
+/*
                 stage('JIRA Test Link') {
                     def String t = 'CA-5377-some-branch-for-testing'
                     def String jiraIssue = getRegexMatchedStr(t, jiraConfig.regex)
@@ -60,7 +64,7 @@ node {
                             println "Issue already has a test link"
                         }
                     }
-                }
+                }*/
 
             }
         }
@@ -79,8 +83,9 @@ List getJiraIssues(List changeSets, String rPattern) {
     for (int i = 0; i < changeSets.size(); i++) {
         def entries = changeSets[i].items
 
-        for (int j = 0; j < entries.length; j++) {            
-            def issueNumber = getRegexMatchedStr(entries[j].msg, rPattern) 
+        for (int j = 0; j < entries.length; j++) {
+            def issueNumber = getRegexMatchedStr(entries[j].msg, rPattern)
+
             if (issueNumber && !issues.contains(issueNumber)) {
                 issues.add(issueNumber)
             }
@@ -91,18 +96,7 @@ List getJiraIssues(List changeSets, String rPattern) {
 }
 
 /**
- * Returns regex matched string 
-* 
- * @return String
- */
-String getRegexMatchedStr(String sourceString, String rPattern) {
-    def strMatch = (sourceString =~ rPattern)
-
-    return strMatch.matches() ? strMatch.group(1) : null
-}
-
-/**
- * Updates Jira issues, changes the status of correspodning ticket and adds a comment
+ * Updates Jira issues, changes the status of corresponding ticket and adds a comment
  *
  * @return boolean
  */
@@ -124,19 +118,32 @@ boolean updateJiraIssues(List issues, String jiraSite, int transitionId, String 
 
 /**
  * Updates the value of passed field for Jira issue
- * 
+ *
  * @return boolean
  */
-boolean updateJiraIssueField(String testUrl, String issueNumber, String projectId, String fieldName, String site) {
+boolean updateJiraIssueField(String issueNumber, String fieldName, String value, String projectId, String site) {
     def testIssue = [fields: [
                            project: [id: projectId],
-                           "${fieldName}": testUrl]]
+                           "${fieldName}": value]]
 
-    jiraEditIssue idOrKey: issueNumber, issue: testIssue, site: site    
+    def response = jiraEditIssue idOrKey: issueNumber, issue: testIssue, site: site
+
+    return response.successful
 }
 
 /**
- * Checks whether Jira issue already has not null value for certain field
+ * Returns regex matched string
+ *
+ * @return String
+ */
+String getRegexMatchedStr(String sourceString, String rPattern) {
+    def strMatch = (sourceString =~ rPattern)
+
+    return strMatch.matches() ? strMatch.group(1) : null
+}
+
+/**
+ * Checks whether Jira issue has not null value for certain field
  *
  * @return boolean
  */
@@ -148,9 +155,9 @@ boolean issueHasField(String issue, String fieldName, String jiraSite) {
 
 /**
  * Returns normalized string
- * 
+ *
  * @return String
  */
 String getNormalizedName(String branchName) {
-    return branchName.toLowerCase().replace(/[^-a-z0-9]/, '-')
+    return branchName.toLowerCase().replaceAll(/[^-a-z0-9]+/, '-')
 }
